@@ -28,30 +28,35 @@ def main():
                   'Industry', 
                   'Service']
   df.drop(dropped_cols, inplace=True, axis=1)
-  df.set_index('Country', inplace=True)
   df.dropna(inplace=True)
 
+  for column in df.columns:
+    if isinstance(df.loc[5, column], str) and df.loc[5, column].find(',') > 0:
+      df[column] = df[column].replace(',', '.', regex=True)
+      df[column] = pd.to_numeric(df[column])
+
   plot_data('GDP ($ per capita)', 'Pop. Density (per sq. mi.)', regression_line=True)
+
+  # summarize('GDP ($ per capita)')
+
+def summarize(series):
+  print(series, df[series].describe())
+  df.boxplot(column=[series])
+  plt.show()
 
 
 def plot_data(series_x, series_y, regression_line=True):
   new_df = pd.DataFrame({series_x : df[series_x],
                          series_y : df[series_y]})
-  
-  # verify that there are no commas in the data - this is probably better to do in the cleaning stage, but whatever
-  if isinstance(new_df[series_x][0], str):
-    new_df[series_x] = new_df[series_x].replace(',', '.', regex=True)
-    new_df[series_x] = pd.to_numeric(new_df[series_x])
-  if isinstance(new_df[series_y][0], str):
-    new_df[series_y] = new_df[series_y].replace(',', '.', regex=True)
-    new_df[series_y] = pd.to_numeric(new_df[series_y])
 
   # use numpy to create a regression line
   d = np.polyfit(new_df[series_x], new_df[series_y], 1)
   f = np.poly1d(d)
 
+  slope, intercept, rvalue, pvalue, stderr = st.linregress(new_df[series_x], new_df[series_y])
+
   # print out the regression line
-  print(f'Regression line for: {series_y} vs {series_x}: {str(f)}')
+  print(f"""Regression line for: {series_y} vs {series_x}: {str(f)}; \nR^2: {rvalue**2}; \np-value: {pvalue}""")
 
   new_df.insert(2, 'Treg', f(new_df[series_x]))
   ax = new_df.plot.scatter(x=series_x, y=series_y)
@@ -61,6 +66,7 @@ def plot_data(series_x, series_y, regression_line=True):
 
   # plot
   plt.show()
+
 
 if __name__ == "__main__":
   main()
