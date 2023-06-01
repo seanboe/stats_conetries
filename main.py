@@ -30,7 +30,6 @@ def main():
   df.drop(dropped_cols, inplace=True, axis=1)
   df.set_index('Country', inplace=True)
   df.dropna(inplace=True)
-  df.head()
 
   plot_data('GDP ($ per capita)', 'Pop. Density (per sq. mi.)', regression_line=True)
 
@@ -39,7 +38,7 @@ def plot_data(series_x, series_y, regression_line=True):
   new_df = pd.DataFrame({series_x : df[series_x],
                          series_y : df[series_y]})
   
-  # verify that there are no commas in the data
+  # verify that there are no commas in the data - this is probably better to do in the cleaning stage, but whatever
   if isinstance(new_df[series_x][0], str):
     new_df[series_x] = new_df[series_x].replace(',', '.', regex=True)
     new_df[series_x] = pd.to_numeric(new_df[series_x])
@@ -47,13 +46,20 @@ def plot_data(series_x, series_y, regression_line=True):
     new_df[series_y] = new_df[series_y].replace(',', '.', regex=True)
     new_df[series_y] = pd.to_numeric(new_df[series_y])
 
+  # use numpy to create a regression line
   d = np.polyfit(new_df[series_x], new_df[series_y], 1)
   f = np.poly1d(d)
+
+  # print out the regression line
+  print(f'Regression line for: {series_y} vs {series_x}: {str(f)}')
+
   new_df.insert(2, 'Treg', f(new_df[series_x]))
   ax = new_df.plot.scatter(x=series_x, y=series_y)
   if regression_line:
-    new_df.plot(x='GDP ($ per capita)', y='Treg', color='Red', ax=ax)
+    new_df.plot(x=series_x, y='Treg', color='Red', ax=ax)
+    plt.legend([series_x, f'{f}'])
 
+  # plot
   plt.show()
 
 if __name__ == "__main__":
