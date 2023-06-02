@@ -21,8 +21,7 @@ def main():
   # print(type(df.query('Name == \'Ben\'')))
   # print(df.query('Name == \'Ben\''))
 
-  dropped_cols = ['Phones (per 1000)', 
-                  'Arable (%)', 
+  dropped_cols = ['Arable (%)', 
                   'Other (%)', 
                   'Climate', 
                   'Agriculture', 
@@ -36,7 +35,10 @@ def main():
       df[column] = df[column].replace(',', '.', regex=True)
       df[column] = pd.to_numeric(df[column])
 
-  analyze('GDP ($ per capita)', 'Infant mortality (per 1000 births)', regression_line=True)
+  print(df['Phones (per 1000)'])
+
+  # analyze('GDP ($ per capita)', 'Infant mortality (per 1000 births)', regression_line=True)
+  analyze('GDP ($ per capita)', 'Phones (per 1000)', regression_line=True)
 
   # summarize('GDP ($ per capita)')
 
@@ -85,7 +87,7 @@ def interpret_data(series_x, series_y, slope, rvalue, pvalue, stderr, alpha):
   output = 'There is a ' 
   output += ('positive') if slope > 0 else ('negative') 
   output += ', linear, and '
-  output += 'moderately strong to strong' if rvalue > 0.85 else 'weak'
+  output += 'moderately strong to strong' if rvalue > 0.6 else 'weak'
   output += f' relationship between {series_x} and {series_y}. '
   if pvalue < alpha:
     output += f'Since the p-value is less than {alpha*100}%, reject H0, and there is statistically significant evidence of a linear relationship. '
