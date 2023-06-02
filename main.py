@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np  
 import scipy.stats as st
 import matplotlib.pyplot as plt
+import statsmodels.formula.api as smf
 
 plt.style.use('ggplot')
 
@@ -35,7 +36,7 @@ def main():
       df[column] = df[column].replace(',', '.', regex=True)
       df[column] = pd.to_numeric(df[column])
 
-  plot_data('GDP ($ per capita)', 'Pop. Density (per sq. mi.)', regression_line=True)
+  analyze('GDP ($ per capita)', 'Infant mortality (per 1000 births)', regression_line=True)
 
   # summarize('GDP ($ per capita)')
 
@@ -45,7 +46,7 @@ def summarize(series):
   plt.show()
 
 
-def plot_data(series_x, series_y, regression_line=True):
+def analyze(series_x, series_y, regression_line=True):
   new_df = pd.DataFrame({series_x : df[series_x],
                          series_y : df[series_y]})
 
@@ -55,8 +56,12 @@ def plot_data(series_x, series_y, regression_line=True):
 
   slope, intercept, rvalue, pvalue, stderr = st.linregress(new_df[series_x], new_df[series_y])
 
-  # print out the regression line
-  print(f"""Regression line for: {series_y} vs {series_x}: {str(f)}; \nR^2: {rvalue**2}; \np-value: {pvalue}""")
+  # Technically, statsmodels should be able to do everything but I'm too lazy to redo it
+  # Renaming is required because statsmodels gets angry at all special characters in the series names - stupid, but ok
+  new_df.rename(columns={series_x : 'x', series_y : 'y'}, inplace=True)
+  regression_table_model = smf.ols('y ~ x', data=new_df)
+  results = regression_table_model.fit()
+  new_df.rename(columns={'x' : series_x, 'y' : series_y}, inplace=True)
 
   new_df.insert(2, 'Treg', f(new_df[series_x]))
   ax = new_df.plot.scatter(x=series_x, y=series_y)
@@ -64,11 +69,17 @@ def plot_data(series_x, series_y, regression_line=True):
     new_df.plot(x=series_x, y='Treg', color='Red', ax=ax)
     plt.legend([series_x, f'{f}'])
 
-  interpret_data(series_x, series_y, slope, rvalue, pvalue, stderr, 0.05)
-
-  # plot
+  # Plot!
   plt.show()
-  return rvalue, pvalue, stderr
+
+  print(f"""Regression line for: {series_y} vs {series_x}: {str(f)}; \nR^2: {rvalue**2}; \np-value: {pvalue}""")
+  print()
+  print(interpret_data(series_x, series_y, slope, rvalue, pvalue, stderr, 0.05))
+  print()
+  print("Regression table: ")
+  print(results.summary())
+
+
 
 def interpret_data(series_x, series_y, slope, rvalue, pvalue, stderr, alpha):
   output = 'There is a ' 
@@ -83,6 +94,7 @@ def interpret_data(series_x, series_y, slope, rvalue, pvalue, stderr, alpha):
   # Interpret R^2
   output += f'{rvalue**2 * 100}% of the variation in {series_y} is explained by the linear relationship between {series_x} and {series_y}.'
   output += f'The linear regression has a standard error of {stderr}.'
+  return output
 
   # Return a formatted version for a regression table
 
